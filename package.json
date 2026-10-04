@@ -1,0 +1,15 @@
+{
+  "name": "mailhub-connector",
+  "version": "2026.10.4",
+  "private": true,
+  "description": "Mailhub connector: Cloudflare 계정의 도메인 메일을 Mailhub로 넘기고, Mailhub가 맡긴 메일을 그 계정의 Email Sending으로 보내는 Worker",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "setup": "node scripts/setup.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.2",
+    "wrangler": "^4.147.0"
+  }
+}

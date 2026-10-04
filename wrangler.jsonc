@@ -1,0 +1,19 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	// Mailhub connector. 도메인이 있는 Cloudflare 계정에 배포합니다.
+	// 계정은 환경 변수 CLOUDFLARE_ACCOUNT_ID로 정합니다 (또는 여기에 "account_id"를 넣음)
+	"name": "mailhub-connector",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-10-01",
+	"observability": { "enabled": true },
+	// Mailhub가 발송을 맡길 주소: https://mailhub-connector.<하위 도메인>.workers.dev/send (토큰으로 인증)
+	"workers_dev": true,
+	"preview_urls": false,
+	// 이 계정의 Email Sending으로 발송
+	"send_email": [{ "name": "EMAIL" }],
+	"vars": {
+		// 받은 메일을 넘길 Mailhub 주소
+		"INGEST_URL": "https://api.mailhub.kr/hooks/ingest"
+	}
+	// 비밀값: CONNECTOR_TOKEN (Mailhub의 POST /api/tenant/connectors로 발급) → npx wrangler secret put CONNECTOR_TOKEN
+}
