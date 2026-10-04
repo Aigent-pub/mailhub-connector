@@ -139,3 +139,7 @@ Mailhub가 확인하는 것:
 - `email()`: catch-all로 받은 메일을 원문 그대로 `INGEST_URL`에 POST. 응답 200이면 받음, 422면 Mailhub가 준 사유로 영구 거부(보낸 쪽에 555), 그 밖에는 일시 실패(421).
 - `POST /send`: Mailhub가 맡긴 메일을 `send_email` 바인딩으로 발송 (토큰 필요).
 - `GET /health`: 토큰 확인과 발송 바인딩 여부 (토큰 필요). 그 밖의 경로는 404.
+
+## 라이선스
+
+MIT. [LICENSE](LICENSE)를 보세요.
