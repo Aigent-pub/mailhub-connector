@@ -35,11 +35,9 @@ const force = flag("force");
 const token = process.env.CLOUDFLARE_API_TOKEN;
 const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
 
-function fail(msg) { console.error(`\n✕ ${msg}`); process.exit(1); }
-if (!domain) fail("--domain이 필요합니다.");
-if (!verify || !/^mailhub-verify=\S+$/.test(verify)) fail('--verify "mailhub-verify=…"가 필요합니다 (Mailhub의 POST /api/tenant/domains 응답).');
-if (!token || !accountId) fail("환경 변수 CLOUDFLARE_API_TOKEN과 CLOUDFLARE_ACCOUNT_ID가 필요합니다.");
-
+// process.exit는 쓰지 않음 (Windows에서 요청이 남아 있을 때 부르면 Node가 비정상 종료함). 멈출 때는 Stop을 던짐
+class Stop extends Error {}
+function fail(msg) { throw new Stop(msg); }
 async function cf(method, path, body) {
   const res = await fetch(API + path, {
     method,
@@ -63,6 +61,7 @@ const spfOthers = (spf) => unquote(spf).split(/\s+/).slice(1)
 const denied = (e) => e.status === 401 || e.status === 403;
 const hint = (perm) => (e) => { if (denied(e)) fail(`권한이 없습니다: ${perm}\n  ${e.message}`); throw e; };
 
+async function main() {
 // ── 점검 (읽기만) ──
 console.log(`Mailhub 연결 설정: ${domain} (계정 ${accountId})${apply ? "" : " — 계획만 출력, 실행하려면 --apply"}\n`);
 const zones = await cf("GET", `/zones?name=${encodeURIComponent(domain)}&account.id=${accountId}`).catch(hint("Zone: Read"));
@@ -143,3 +142,16 @@ console.log(`  POST https://api.mailhub.kr/api/tenant/domains/${domain}/verify`)
 console.log(`  ${JSON.stringify({ cf_account_id: accountId, send_url: sendUrl ?? "https://<worker>.<하위 도메인>.workers.dev/send" })}`);
 if (!sendUrl) console.log("  (이 계정에 workers.dev 하위 도메인이 없습니다. 대시보드 Workers & Pages에서 만들거나 wrangler deploy가 안내하는 대로 만드세요.)");
 if (!apply && todo.length) console.log("\n이 계획대로 바꾸려면 --apply를 붙여 다시 실행하세요.");
+}
+
+try {
+  if (!domain) fail("--domain이 필요합니다.");
+  if (!verify || !/^mailhub-verify=\S+$/.test(verify)) fail('--verify "mailhub-verify=…"가 필요합니다 (Mailhub의 POST /api/tenant/domains 응답).');
+  if (!token || !accountId) fail("환경 변수 CLOUDFLARE_API_TOKEN과 CLOUDFLARE_ACCOUNT_ID가 필요합니다.");
+  await main();
+} catch (e) {
+  // Cloudflare API 오류는 메시지만 (토큰이 틀리면 400·401)
+  const cfError = typeof e?.status === "number";
+  console.error(`\n✕ ${e instanceof Stop ? e.message : cfError ? `${e.message}${e.status === 400 || e.status === 401 ? "\n  CLOUDFLARE_API_TOKEN과 CLOUDFLARE_ACCOUNT_ID를 확인하세요." : ""}` : e.stack ?? e}`);
+  process.exitCode = 1;
+}
